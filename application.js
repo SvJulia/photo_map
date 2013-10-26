@@ -20,6 +20,7 @@ function initialize() {
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
   google.maps.event.addListener(map, 'click', function(event) {   
+    photosCount = 0;
     clearMarkers();
     addCircle(event.latLng, radius);
     getPhotos(event.latLng, radius);
