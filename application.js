@@ -4,34 +4,38 @@ var circle;
 
 var clientId = '43d195c597994fe78183ef23824933cd';
 
-var radius = 1000;
 var photosCount = 0;
-var maxPhotosCount = 50;
+var maxPhotosCount = 500;
 var delay = 720;
 var photoTimeoutId = -1;
 var photos = [];
 
 function initialize() {
+  var radius = 1000;
   var mapOptions = {
-    zoom: 13,
+    zoom: 12,
     center: new google.maps.LatLng(54.31865, 48.39765),
     mapTypeId: google.maps.MapTypeId.ROADMAP
   };
 
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
 
-  google.maps.event.addListener(map, 'click', function(event) {              
-    if(photoTimeoutId != -1) {
-      clearTimeout(photoTimeoutId);
-      photoTimeoutId = -1;
-    }
-    
-    photosCount = 0;
-    clearMarkers();
-    
-    addCircle(event.latLng, radius); 
-    getPhotos(event.latLng, radius);   
+  google.maps.event.addListener(map, 'click', function(event) { 
+    startShowPhotos(event.latLng, radius);             
   });
+}
+
+function startShowPhotos(location, radius) {
+  if(photoTimeoutId != -1) {
+    clearTimeout(photoTimeoutId);
+    photoTimeoutId = -1;
+  }
+
+  photosCount = 0;
+  clearMarkers();
+
+  addCircle(location, radius); 
+  getPhotos(location, radius);   
 }
 
 function getPhotos(location, radius, maxDate) {    
