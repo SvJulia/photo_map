@@ -8,12 +8,11 @@ var circles = [];
 var clientId = '43d195c597994fe78183ef23824933cd';
 
 var delay = 720;
+var radius = 500;
 var photosCount = 0;
 var maxPhotosCount = 500;
 
 function initialize() {
-  var radius = 2500;
-
   var mapOptions = {
     zoom: 12,
     center: new google.maps.LatLng(54.31865, 48.39765),
@@ -50,6 +49,7 @@ function setFirstMarker(location) {
   
   google.maps.event.addListener(firstMarker, 'click', function(event) {
     polygon = getPolygon(polyline);    
+    
     polyline.setMap(null);
     polyline = null;
     firstMarker.setMap(null);
@@ -79,15 +79,21 @@ function getPolygon(polyline) {
 }
 
 function showPhotosInPolygon(polygon) {
-}
-
-function startShowPhotos(location, radius, delay) {
   photosCount = 0;
   clearObjects(markers);
   clearObjects(circles);
 
+  var locations = polygon.getPath().getArray();
+  for (var i = 0; i < locations.length; i++) {
+    startShowPhotos(locations[i], radius, delay, delay * locations.length)
+  }
+}
+
+function startShowPhotos(location, radius, delay, runDelay) {
   addCircle(location, radius); 
-  getPhotos(location, radius, delay);   
+  setTimeout(function() { 
+    getPhotos(location, radius, delay);   
+  }, runDelay);
 }
 
 function getPhotos(location, radius, delay, maxDate) {    
