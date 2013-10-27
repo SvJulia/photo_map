@@ -92,8 +92,7 @@ function showPhotosInPolygon(polygon) {
   startShowPhotos(getCentralLocation(locations), radius, delay, delay * locations.length)  
 }
 
-function getCentralLocation(locations
-) {
+function getCentralLocation(locations) {
   var centralLat = 0;
   var centralLng = 0;
   
@@ -120,6 +119,7 @@ function getPhotos(location, radius, delay, maxDate) {
     url: getPhotoUrl(location, radius, maxDate),
     success: function(result) {  
       addMarkers(result.data);
+      showPhotos(result.data);
           
       newPhotosCount = result.data.length;
       photosCount += newPhotosCount;
@@ -146,6 +146,13 @@ function addMarkers(data) {
     markers.push(marker);
   }
 }
+
+function showPhotos(data) {  
+  for (var i = 0; i < data.length; i++) {
+    $('#result').prepend("<a target='_blank' href='" + data[i].link + "'><img src='" + data[i].images.thumbnail.url + "'></img>");
+  }
+}
+
 
 function showInfoWindow(marker, image, link) {
   var coordInfoWindow = new google.maps.InfoWindow();
