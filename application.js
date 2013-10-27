@@ -1,17 +1,19 @@
-var map;
+var map = null;
+var firstMarker = null;
+var polygon = null;
+var polyline = null;
 var markers = [];
-var circle;
+var circles = [];
 
 var clientId = '43d195c597994fe78183ef23824933cd';
 
+var delay = 720;
 var photosCount = 0;
 var maxPhotosCount = 500;
-var delay = 720;
-var photoTimeoutId = -1;
-var photos = [];
 
 function initialize() {
-  var radius = 1000;
+  var radius = 2500;
+
   var mapOptions = {
     zoom: 12,
     center: new google.maps.LatLng(54.31865, 48.39765),
@@ -19,34 +21,82 @@ function initialize() {
   };
 
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
-
+  
   google.maps.event.addListener(map, 'click', function(event) { 
-    startShowPhotos(event.latLng, radius);             
+    setFirstMarker(event.latLng);
+    setPoint(event.latLng);
   });
 }
 
-function startShowPhotos(location, radius) {
-  if(photoTimeoutId != -1) {
-    clearTimeout(photoTimeoutId);
-    photoTimeoutId = -1;
+function setFirstMarker(location) {
+  if(firstMarker != null) {
+    return;
   }
 
-  photosCount = 0;
-  clearMarkers();
+  var polyOptions = {
+    strokeColor: '#000000',
+    strokeOpacity: 0.5,
+    strokeWeight: 3
+  };
+ 
+  polyline = new google.maps.Polyline(polyOptions);
+  polyline.setMap(map);
 
-  addCircle(location, radius); 
-  getPhotos(location, radius);   
+  firstMarker = new google.maps.Marker({
+    map: map,
+    title: "Кликните на маркер, чтобы замкнуть фигуру.",
+    position: location
+  });
+  
+  google.maps.event.addListener(firstMarker, 'click', function(event) {
+    polygon = getPolygon(polyline);    
+    polyline.setMap(null);
+    polyline = null;
+    firstMarker.setMap(null);
+    firstMarker = null;
+        
+    showPhotosInPolygon(polygon);
+  });
 }
 
-function getPhotos(location, radius, maxDate) {    
+function setPoint(location) {
+  var path = polyline.getPath();
+  path.push(location);
+}
+
+function getPolygon(polyline) {
+  var polygon = new google.maps.Polygon({
+    map: map,
+    paths: polyline.getPath(), 
+    strokeColor: '#F00',
+    strokeOpacity: 0.5,
+    strokeWeight: 2,
+    fillColor: '#F00', 
+    fillOpacity: 0.15
+  });
+  
+  return polygon;
+}
+
+function showPhotosInPolygon(polygon) {
+}
+
+function startShowPhotos(location, radius, delay) {
+  photosCount = 0;
+  clearObjects(markers);
+  clearObjects(circles);
+
+  addCircle(location, radius); 
+  getPhotos(location, radius, delay);   
+}
+
+function getPhotos(location, radius, delay, maxDate) {    
   $.ajax({
     type: 'GET',
     dataType: 'jsonp',
     cache: false,
     url: getPhotoUrl(location, radius, maxDate),
     success: function(result) {  
-      addPhotos(photos, result.data);
-      showPhotos(result.data);      
       addMarkers(result.data);
       
       newPhotosCount = result.data.length;
@@ -54,32 +104,12 @@ function getPhotos(location, radius, maxDate) {
       
       if (photosCount < maxPhotosCount && newPhotosCount != 0) {
         var lastDate = findMinDate(result.data) - 100;
-        photoTimeoutId = setTimeout(function() { getPhotos(location, radius, lastDate); }, delay);
-      } else {
-        photoTimeoutId = -1;
+        setTimeout(function() { getPhotos(location, radius, lastDate); }, delay);
       }    
       
       $('#photos').text(photosCount);
      }
   });
-}
-
-function addPhotos(photos, data) {
-  for (var i = 0; i < data.length; i++) {
-    var photo = {
-      img: data[i].images.thumbnail.url,
-      latitude: data[i].location.latitude,
-      longitude: data[i].location.longitude,
-    };
-    
-    photos.push(photo);
-  }
-}
-
-function showPhotos(data) {  
-  for (var i = 0; i < data.length; i++) {
-    $('#result').prepend("<a target='_blank' href='" + data[i].link + "'><img src='" + data[i].images.thumbnail.url +"'></img></a>");
-  }
 }
 
 function addMarkers(data) {  
@@ -105,12 +135,12 @@ function showInfoWindow(marker, image, link) {
   });
 }
 
-function clearMarkers() {
-  for (var i = 0; i < markers.length; i++) {
-    markers[i].setMap(null);
+function clearObjects(objects) {
+  for (var i = 0; i < objects.length; i++) {
+    objects[i].setMap(null);
   }
   
-  markers = [];
+  objects = [];
 }
 
 function findMinDate(data) {
@@ -131,20 +161,17 @@ function getPhotoUrl(location, radius, maxDate) {
 }
 
 function addCircle(location, radius) {  
-  if (circle != null) {
-    circle.setMap(null);
-  }
-  
-  circle = new google.maps.Circle({
+  var circle = new google.maps.Circle({
+    map: map,
     center: location, 
-    strokeColor: '#EAC',
-    strokeOpacity: 0.7,
-    fillColor: '#EAC', 
-    fillOpacity: 0.4, 
+    strokeColor: '#3CF',
+    strokeOpacity: 0.5,
+    fillColor: '#3CF', 
+    fillOpacity: 0.3, 
     radius: radius
   });
   
-  circle.setMap(map);
+  circles.push(circle);
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
