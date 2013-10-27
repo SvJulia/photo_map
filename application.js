@@ -8,7 +8,7 @@ var circles = [];
 var clientId = '43d195c597994fe78183ef23824933cd';
 
 var delay = 720;
-var radius = 500;
+var radius = 1000;
 var photosCount = 0;
 var maxPhotosCount = 500;
 
@@ -84,9 +84,25 @@ function showPhotosInPolygon(polygon) {
   clearObjects(circles);
 
   var locations = polygon.getPath().getArray();
+
   for (var i = 0; i < locations.length; i++) {
     startShowPhotos(locations[i], radius, delay, delay * locations.length)
   }
+
+  startShowPhotos(getCentralLocation(locations), radius, delay, delay * locations.length)  
+}
+
+function getCentralLocation(locations
+) {
+  var centralLat = 0;
+  var centralLng = 0;
+  
+  for (var i = 0; i < locations.length; i++) {
+    centralLat += locations[i].lat();
+    centralLng += locations[i].lng();
+  }
+  
+  return new google.maps.LatLng(centralLat / locations.length, centralLng / locations.length);
 }
 
 function startShowPhotos(location, radius, delay, runDelay) {
@@ -104,17 +120,17 @@ function getPhotos(location, radius, delay, maxDate) {
     url: getPhotoUrl(location, radius, maxDate),
     success: function(result) {  
       addMarkers(result.data);
-      
+          
       newPhotosCount = result.data.length;
       photosCount += newPhotosCount;
-      
+
       if (photosCount < maxPhotosCount && newPhotosCount != 0) {
         var lastDate = findMinDate(result.data) - 100;
-        setTimeout(function() { getPhotos(location, radius, lastDate); }, delay);
+        setTimeout(function() { getPhotos(location, radius, delay, lastDate); }, delay);
       }    
-      
-      $('#photos').text(photosCount);
-     }
+
+      $('#photos').text(photosCount); 
+    }
   });
 }
 
