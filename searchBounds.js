@@ -1,3 +1,6 @@
+// Границы поиска. Объекту надо передать polyline, и он заполнит её зонами поиска с радиусами zoneRadius
+// Так же создаст внутри закрашенный polygon.
+
 var SearchBounds = (function() {
   function SearchBounds(polyline, zoneRadius) {
     this.zoneRadius = zoneRadius;
@@ -43,6 +46,7 @@ var SearchBounds = (function() {
     });
   }
 
+  // Создаёт зоны. Для этого использует Гексагональную карту.
   function createZones(polygon, radius) {
     var polygonLocations = polygon.getPath().getArray();
     var centralLocation = getCentralLocation(polygonLocations);
@@ -50,18 +54,24 @@ var SearchBounds = (function() {
     var zones = [];
     var zoneLocations = [];
 
+    // Центр карты, это центр полигона - среднее значение координат.
     var hexMap = new HexMap(centralLocation);
     zoneLocations.push({ location: centralLocation, q: 0, r: 0 });
 
+    // Затем проходимся по зонам в массиве
     for(var i = 0; i < zoneLocations.length; i++) {
       var mapElement = zoneLocations[i];
       zones.push(new Zone(mapElement.location, radius));
 
+      // Если центр зоны поиска внутри полигона
       if(polygon.containsLatLng(mapElement.location)) {
+        // то, мы берём 6 соседних точек, относительно текущей. Эти точки центра шестиугольников с ребром radius
         var newLocations = getNewLocations(mapElement.location, radius);
 
+        // Далее проходимся по этим точкам. Если их нет на Гексагональной карте, то мы добавляем их туда
+        // и добавляем в массив точек, чтобы найти её соседей.
         for(var j = 0; j < newLocations.length; j++) {
-          var coord = hexMap.getNearCoordinate(mapElement.q, mapElement.r, j);
+          var coord = hexMap.getCoordinate(mapElement.q, mapElement.r, j);
 
           if(!hexMap.getLocation(coord.q, coord.r)) {
             hexMap.setLocation(coord.q, coord.r, newLocations[j]);
@@ -101,47 +111,4 @@ var SearchBounds = (function() {
   }
 
   return SearchBounds;
-})();
-
-// Класс для описания гексагональной карты. Она нужна, для того, чтобы запоминать позиции зон поиска картинок.
-// Зоны поиска строятся как шестиугольники, с ребром radius. Затем шестиугольник описывает круг, с радиусом radius.
-// Для хранения этих зон нужен класс. Идеи для реализации гексагональной карты взяты с сайта http://www.redblobgames.com/grids/hexagons/
-var HexMap = (function() {
-  var neighbors = [
-    [+1, -1], [+1,  0], [ 0, +1],
-    [-1, +1], [-1,  0], [ 0, -1]
-  ];
-
-  function HexMap(firstLocation) {
-    this.map = [];
-    this.setLocation(0, 0, firstLocation);
-  }
-
-  HexMap.prototype.getLocation = function(q, r) {
-    if(this.map[q]) {
-      return this.map[q][r];
-    } 
-
-    return null;
-  }
-
-  HexMap.prototype.setLocation = function(q, r, location) {
-    if(!this.map[q]) {
-      this.map[q] = [];
-    } 
-
-    this.map[q][r] = location;
-  }
-
-  HexMap.prototype.getNearLocation = function(q, r, direction) {
-    var dir = neighbors[direction];
-    return getLocation(q + dir[0], r + dir[1]);
-  }
-
-  HexMap.prototype.getNearCoordinate = function(q, r, direction) {
-    var dir = neighbors[direction];
-    return { q: q + dir[0], r: r + dir[1] };
-  }
-
-  return HexMap;
 })();

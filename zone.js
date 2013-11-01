@@ -1,3 +1,5 @@
+// Зона поиска фотграфий. 
+// Хранит в себе координату центра, радиус, фотографии и их позиции, а так же маркеры
 var Zone = (function() {
   function Zone(location, radius) {
     this.location = location;
