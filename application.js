@@ -7,7 +7,7 @@ var searchBounds = null;
 var clientId = '43d195c597994fe78183ef23824933cd';
 
 var delay = 720;
-var radius = 2000;
+var radius = 1500;
 var photosCount = 0;
 var maxPhotosCount = 1000;
 
@@ -85,9 +85,7 @@ function showPhotosInPolyline(polyline) {
 
 function startShowPhotos(zone, delay, runDelay) {  
   zone.showCircle(map);
-  setTimeout(function() { 
-    getPhotos(zone, delay);   
-  }, runDelay);
+  setTimeout(function() { getPhotos(zone, delay); }, runDelay);
 }
 
 function getPhotos(zone, delay, maxDate) {
@@ -106,7 +104,9 @@ function getPhotos(zone, delay, maxDate) {
       if (photosCount < maxPhotosCount && newPhotosCount != 0) {
         var lastDate = findMinDate(result.data) - 100;
         setTimeout(function() { getPhotos(zone, delay, lastDate); }, delay);
-      }    
+      } else {
+        zone.hideCircle();
+      }
 
       $('#photos').text(photosCount); 
     },

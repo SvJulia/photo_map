@@ -6,10 +6,10 @@ var Zone = (function() {
     this.circle = new google.maps.Circle({
       center: this.location,
       radius: this.radius,
-      strokeColor: '#33CCFF',
-      strokeOpacity: 0.5,
-      fillColor: '#33CCFF', 
-      fillOpacity: 0.3
+      strokeColor: '#0099CC',
+      strokeOpacity: 0.2,
+      fillColor: '#0099CC', 
+      fillOpacity: 0.2
     });
 
     this.photos = [];
@@ -74,6 +74,13 @@ var Zone = (function() {
 
   Zone.prototype.hideCircle = function() {
     this.circle.setMap(null);
+  }
+
+  Zone.prototype.setColor = function(color) {
+    var map = this.circle.getMap();
+    this.circle.fillColor = color;
+    this.circle.strokeColor = color;
+    this.circle.setMap(map);  
   }
 
   Zone.prototype.clear = function() {
