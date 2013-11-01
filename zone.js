@@ -6,11 +6,10 @@ var Zone = (function() {
     this.circle = new google.maps.Circle({
       center: this.location,
       radius: this.radius,
-      strokeColor: '#3CF',
+      strokeColor: '#33CCFF',
       strokeOpacity: 0.5,
-      fillColor: '#3CF', 
-      fillOpacity: 0.3,
-      draggable: true
+      fillColor: '#33CCFF', 
+      fillOpacity: 0.3
     });
 
     this.photos = [];

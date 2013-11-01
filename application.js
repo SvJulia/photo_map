@@ -9,7 +9,7 @@ var clientId = '43d195c597994fe78183ef23824933cd';
 var delay = 720;
 var radius = 2000;
 var photosCount = 0;
-var maxPhotosCount = 500;
+var maxPhotosCount = 1000;
 
 function initialize() {
   var mapOptions = {
@@ -78,14 +78,9 @@ function showPhotosInPolyline(polyline) {
   searchBounds.showPolygon(map);
   searchBounds.showCircles(map);
 
-  /*
-  var searchLocations = polygon.getPath().getArray();
-
-  for (var i = 0; i < searchLocations.length; i++) {
-    zones[i] = new Zone(searchLocations[i], radius);  
-    startShowPhotos(zones[i], delay, delay * i)
+  for (var i = 0; i < searchBounds.zones.length; i++) {
+    startShowPhotos(searchBounds.zones[i], delay, delay * i)
   }
-  */
 }
 
 function startShowPhotos(zone, delay, runDelay) {  
