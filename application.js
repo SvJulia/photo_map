@@ -1,14 +1,13 @@
 var map = null;
 var firstMarker = null;
-var polygon = null;
 var polyline = null;
-var markers = [];
-var circles = [];
+
+var searchBounds = null;
 
 var clientId = '43d195c597994fe78183ef23824933cd';
 
 var delay = 720;
-var radius = 1000;
+var radius = 2000;
 var photosCount = 0;
 var maxPhotosCount = 500;
 
@@ -22,154 +21,110 @@ function initialize() {
   map = new google.maps.Map(document.getElementById('map-canvas'), mapOptions);
   
   google.maps.event.addListener(map, 'click', function(event) { 
-    setFirstMarker(event.latLng);
-    setPoint(event.latLng);
+    var location = event.latLng;
+
+    if(!markerExists(firstMarker)) {
+      firstMarker = createFirstMarker(location);
+      polyline = createPolyline();
+    }
+ 
+    addLocation(polyline, location);
   });
 }
 
-function setFirstMarker(location) {
-  if(firstMarker != null) {
-    return;
-  }
+function markerExists(marker) {
+  return marker && marker.getMap();
+}
 
-  var polyOptions = {
-    strokeColor: '#000000',
-    strokeOpacity: 0.5,
-    strokeWeight: 3
-  };
- 
-  polyline = new google.maps.Polyline(polyOptions);
-  polyline.setMap(map);
-
-  firstMarker = new google.maps.Marker({
+function createFirstMarker(location) {
+  var marker = new google.maps.Marker({
     map: map,
     title: "Кликните на маркер, чтобы замкнуть фигуру.",
     position: location
   });
   
-  google.maps.event.addListener(firstMarker, 'click', function(event) {
-    polygon = getPolygon(polyline);    
-    
+  google.maps.event.addListener(marker, 'click', function(event) {    
+    showPhotosInPolyline(polyline);
+
+    marker.setMap(null);
     polyline.setMap(null);
-    polyline = null;
-    firstMarker.setMap(null);
-    firstMarker = null;
-        
-    showPhotosInPolygon(polygon);
+  });
+
+  return marker;
+}
+
+function createPolyline() {
+  return new google.maps.Polyline({
+    map: map,
+    strokeColor: '#000000',
+    strokeOpacity: 0.5,
+    strokeWeight: 3
   });
 }
 
-function setPoint(location) {
+function addLocation(polyline, location) {
   var path = polyline.getPath();
   path.push(location);
 }
 
-function getPolygon(polyline) {
-  var polygon = new google.maps.Polygon({
-    map: map,
-    paths: polyline.getPath(), 
-    strokeColor: '#F00',
-    strokeOpacity: 0.5,
-    strokeWeight: 2,
-    fillColor: '#F00', 
-    fillOpacity: 0.15
-  });
-  
-  return polygon;
-}
-
-function showPhotosInPolygon(polygon) {
+function showPhotosInPolyline(polyline) {
   photosCount = 0;
-  clearObjects(markers);
-  clearObjects(circles);
 
-  var locations = polygon.getPath().getArray();
-
-  for (var i = 0; i < locations.length; i++) {
-    startShowPhotos(locations[i], radius, delay, delay * locations.length)
+  if(searchBounds) {
+    searchBounds.clear();
   }
 
-  startShowPhotos(getCentralLocation(locations), radius, delay, delay * locations.length)  
-}
+  searchBounds = new SearchBounds(polyline, radius);
+  searchBounds.showPolygon(map);
+  searchBounds.showCircles(map);
 
-function getCentralLocation(locations) {
-  var centralLat = 0;
-  var centralLng = 0;
-  
-  for (var i = 0; i < locations.length; i++) {
-    centralLat += locations[i].lat();
-    centralLng += locations[i].lng();
+  /*
+  var searchLocations = polygon.getPath().getArray();
+
+  for (var i = 0; i < searchLocations.length; i++) {
+    zones[i] = new Zone(searchLocations[i], radius);  
+    startShowPhotos(zones[i], delay, delay * i)
   }
-  
-  return new google.maps.LatLng(centralLat / locations.length, centralLng / locations.length);
+  */
 }
 
-function startShowPhotos(location, radius, delay, runDelay) {
-  addCircle(location, radius); 
+function startShowPhotos(zone, delay, runDelay) {  
+  zone.showCircle(map);
   setTimeout(function() { 
-    getPhotos(location, radius, delay);   
+    getPhotos(zone, delay);   
   }, runDelay);
 }
 
-function getPhotos(location, radius, delay, maxDate) {    
+function getPhotos(zone, delay, maxDate) {
   $.ajax({
     type: 'GET',
     dataType: 'jsonp',
     cache: false,
-    url: getPhotoUrl(location, radius, maxDate),
+    url: getPhotoUrl(zone.location, zone.radius, maxDate),
     success: function(result) {  
-      addMarkers(result.data);
-      showPhotos(result.data);
-          
+      zone.addPhotos(result.data);
+      zone.showPhotos(map);
+
       newPhotosCount = result.data.length;
       photosCount += newPhotosCount;
 
       if (photosCount < maxPhotosCount && newPhotosCount != 0) {
         var lastDate = findMinDate(result.data) - 100;
-        setTimeout(function() { getPhotos(location, radius, delay, lastDate); }, delay);
+        setTimeout(function() { getPhotos(zone, delay, lastDate); }, delay);
       }    
 
       $('#photos').text(photosCount); 
+    },
+    error: function(result) {  
+      alert(result);
     }
   });
-}
-
-function addMarkers(data) {  
-  for (var i = 0; i < data.length; i++) {
-    var marker = new google.maps.Marker({
-      map: map,
-      position: new google.maps.LatLng(data[i].location.latitude, data[i].location.longitude),
-      title: data[i].user.username
-    });
-        
-    showInfoWindow(marker, data[i].images.thumbnail.url, data[i].link);
-    markers.push(marker);
-  }
 }
 
 function showPhotos(data) {  
   for (var i = 0; i < data.length; i++) {
     $('#result').prepend("<a target='_blank' href='" + data[i].link + "'><img src='" + data[i].images.thumbnail.url + "'></img>");
   }
-}
-
-
-function showInfoWindow(marker, image, link) {
-  var coordInfoWindow = new google.maps.InfoWindow();
-  coordInfoWindow.setPosition(marker.position);
-  coordInfoWindow.setContent("<a target='_blank' href='" + link + "'><img src='" + image + "'></img></a>");
- 
-  google.maps.event.addListener(marker, 'click', function(event) {
-     coordInfoWindow.open(map);
-  });
-}
-
-function clearObjects(objects) {
-  for (var i = 0; i < objects.length; i++) {
-    objects[i].setMap(null);
-  }
-  
-  objects = [];
 }
 
 function findMinDate(data) {
@@ -187,20 +142,6 @@ function findMinDate(data) {
 function getPhotoUrl(location, radius, maxDate) {
   var date = maxDate || Math.round(new Date().getTime() / 1000);
   return 'https://api.instagram.com/v1/media/search?lat=' + location.lat() + '&lng=' + location.lng() + '&distance=' + radius + '&max_timestamp=' + maxDate + '&client_id=' + clientId; 
-}
-
-function addCircle(location, radius) {  
-  var circle = new google.maps.Circle({
-    map: map,
-    center: location, 
-    strokeColor: '#3CF',
-    strokeOpacity: 0.5,
-    fillColor: '#3CF', 
-    fillOpacity: 0.3, 
-    radius: radius
-  });
-  
-  circles.push(circle);
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
