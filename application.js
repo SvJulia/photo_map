@@ -7,7 +7,7 @@ var searchBounds = null;
 var clientId = '43d195c597994fe78183ef23824933cd';
 
 var delay = 720;
-var radius = 1500;
+var radius = 2000;
 var photosCount = 0;
 var maxPhotosCount = 1000;
 
@@ -76,7 +76,7 @@ function showPhotosInPolyline(polyline) {
 
   searchBounds = new SearchBounds(polyline, radius);
   searchBounds.showPolygon(map);
-  searchBounds.showCircles(map);
+  searchBounds.showHexes(map);
 
   for (var i = 0; i < searchBounds.zones.length; i++) {
     startShowPhotos(searchBounds.zones[i], delay, delay * i)
@@ -84,7 +84,6 @@ function showPhotosInPolyline(polyline) {
 }
 
 function startShowPhotos(zone, delay, runDelay) {  
-  zone.showCircle(map);
   setTimeout(function() { getPhotos(zone, delay); }, runDelay);
 }
 
@@ -97,6 +96,7 @@ function getPhotos(zone, delay, maxDate) {
     success: function(result) {  
       zone.addPhotos(result.data);
       zone.showPhotos(map);
+      showPhotos(result.data);
 
       newPhotosCount = result.data.length;
       photosCount += newPhotosCount;
@@ -105,6 +105,7 @@ function getPhotos(zone, delay, maxDate) {
         var lastDate = findMinDate(result.data) - 100;
         setTimeout(function() { getPhotos(zone, delay, lastDate); }, delay);
       } else {
+        zone.hideHex();
         zone.hideCircle();
       }
 

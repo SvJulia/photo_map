@@ -1,9 +1,15 @@
 // Зона поиска фотграфий. 
 // Хранит в себе координату центра, радиус, фотографии и их позиции, а так же маркеры
 var Zone = (function() {
-  function Zone(location, radius) {
+  function Zone(location, polylinePath, radius) {
     this.location = location;
     this.radius = radius;
+
+    this.hex = new google.maps.Polyline({
+      path: polylinePath,
+      strokeColor: '#CC0099',
+      strokeOpacity: 1,
+    });
 
     this.circle = new google.maps.Circle({
       center: this.location,
@@ -78,16 +84,18 @@ var Zone = (function() {
     this.circle.setMap(null);
   }
 
-  Zone.prototype.setColor = function(color) {
-    var map = this.circle.getMap();
-    this.circle.fillColor = color;
-    this.circle.strokeColor = color;
-    this.circle.setMap(map);  
+  Zone.prototype.showHex = function(map) {
+    this.hex.setMap(map);
+  }
+
+  Zone.prototype.hideHex = function() {
+    this.hex.setMap(null);
   }
 
   Zone.prototype.clear = function() {
     this.location = 0;
     this.radius = 0;
+    this.hex.setMap(null);
     this.circle.setMap(null);
     this.photos = [];
     this.photoPositions = [];
